@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DF247 Dispatch — Multi-User Login</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.6/dist/umd/supabase.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui;
+      margin: 0; padding: 20px;
+      background: #f9fafb; color: #111;
+    }
+    .card {
+      background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+      padding: 18px; max-width: 500px; margin: 0 auto; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; }
+    input {
+      flex: 1; padding: 12px; border: 1px solid #d1d5db; border-radius: 10px;
+      min-width: 200px;
+    }
+    button {
+      padding: 12px 16px; border-radius: 10px; border: none; font-weight: 600;
+    }
+    .primary { background: #dc2626; color: #fff; }
+    .secondary { background: #1f2937; color: #fff; }
+    .ok { background: #10b981; color: #fff; }
+    h2 { margin-top: 0; color: #dc2626; text-align: center; }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h2>DF247 Dispatch</h2>
+    <p>Built for the Hustler Hauler 💪<br>Login or create your account below.</p>
+
+    <div class="row" style="margin-top:10px;">
+      <input id="email" type="email" placeholder="you@dieselforce247llc.net" />
+      <input id="password" type="password" placeholder="Password (8+ chars)" />
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <button class="primary" onclick="signIn()">Sign In</button>
+      <button class="secondary" onclick="signUp()">Create Account</button>
+      <button class="ok" onclick="sendOtp()">Magic Link</button>
+    </div>
+  </div>
+
+  <div class="card" id="app" style="margin-top:16px; display:none;">
+    <h3>Welcome to DF247 Dispatch</h3>
+    <p>Signed in as: <b id="who"></b></p>
+    <p>✅ You’re connected to Supabase. Trip logging and profit tracking coming next.</p>
+    <button class="secondary" onclick="logout()">Sign Out</button>
+  </div>
+
+  <script>
+    // 🔗 Supabase project details
+    const SUPABASE_URL = 'https://mwisbobwvtwdxpqohqmn.supabase.co';
+    const SUPABASE_ANON_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13aXNib2J3dnR3ZHhwcW9ocW1uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1MjEyNjcsImV4cCI6MjA3NzA5NzI2N30.TMeHW5RMM1MTFD764MhV7ErBfti-8xYAbTxv3J8y8tI';
+    const supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    function showApp(user) {
+      document.getElementById('who').textContent = user?.email || '';
+      document.getElementById('app').style.display = 'block';
+    }
+    function hideApp() {
+      document.getElementById('app').style.display = 'none';
+    }
+
+    async function signIn() {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const { data, error } = await supa.auth.signInWithPassword({ email, password });
+      if (error) return alert(error.message);
+      showApp(data.user);
+    }
+
+    async function signUp() {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const { data, error } = await supa.auth.signUp({ email, password });
+      if (error) return alert(error.message);
+      alert('Account created! Check your email to confirm, then sign in.');
+    }
+
+    async function sendOtp() {
+      const email = document.getElementById('email').value.trim();
+      const { error } = await supa.auth.signInWithOtp({ email });
+      if (error) return alert(error.message);
+      alert('Magic Link sent — check your email!');
+    }
+
+    async function logout() {
+      await supa.auth.signOut();
+      hideApp();
+    }
+
+    supa.auth.onAuthStateChange((evt, session) => {
+      if (session?.user) showApp(session.user);
+      else hideApp();
+    });
+  </script>
+</body>
+</html>
