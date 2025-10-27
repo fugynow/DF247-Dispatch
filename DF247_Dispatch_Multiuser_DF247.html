@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>DF247 Dispatch — Multi-User</title>
+<style>
+  :root{--df-red:#DC2626;--df-char:#1F2937;--df-bg:#F9FAFB;--card:#FFFFFF;--muted:#6B7280;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,Inter,system-ui;background:var(--df-bg);color:#111;}
+  header{position:sticky;top:0;background:#fff;border-bottom:1px solid #e5e7eb;padding:12px 16px;display:flex;align-items:center;gap:12px;z-index:5}
+  .logo{width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,var(--df-red),#7c1b1b);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
+  .title{font-weight:800}
+  .tag{color:var(--muted);font-size:12px}
+  .card{background:var(--card);border:1px solid #e5e7eb;border-radius:14px;padding:12px;margin:10px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .btn{background:var(--df-red);color:#fff;padding:10px 12px;border-radius:10px;border:none}
+  .hidden{display:none}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e7eb;display:flex;justify-content:space-around;padding:8px}
+  nav button{background:none;border:none;padding:8px 12px;border-radius:10px}
+  nav button.active{background:var(--df-red);color:#fff}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.6/dist/umd/supabase.js"></script>
+</head>
+<body>
+<header>
+  <div class="logo">DF</div>
+  <div>
+    <div class="title">DF247 Dispatch</div>
+    <div class="tag">Built for the Hustler Hauler. • Multi-User</div>
+  </div>
+  <div style="margin-left:auto"><button id="authUserBtn" class="btn" onclick="logout()">Sign out</button></div>
+</header>
+
+<main style="padding:12px 12px 90px">
+  <section id="auth">
+    <div class="card">
+      <b>Team Sign-In</b><div class="tag">Share trips & profits.</div>
+      <div class="grid" style="margin-top:8px">
+        <input id="email" type="email" placeholder="yourname@df247.com" style="padding:10px;border:1px solid #e5e7eb;border-radius:10px">
+        <input id="password" type="password" placeholder="Password" style="padding:10px;border:1px solid #e5e7eb;border-radius:10px">
+      </div>
+      <div class="grid" style="margin-top:8px">
+        <button class="btn" onclick="signIn()">Sign In</button>
+        <button class="btn" onclick="signUp()">Create Account</button>
+      </div>
+      <button class="btn" style="margin-top:8px;background:#1F2937" onclick="sendOtp()">Send Magic Link</button>
+    </div>
+  </section>
+
+  <section id="app" class="hidden">
+    <div class="card"><b>Welcome</b><div class="tag">Keys are installed. Your team can sign in now.</div></div>
+  </section>
+</main>
+
+<nav>
+  <button id="tab_home" class="active" onclick="showTab('auth')">Auth</button>
+  <button id="tab_profit" onclick="showTab('app')">App</button>
+</nav>
+
+<script>
+const SUPABASE_URL = 'https://mwisbobwvtwdxpqohqmn.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13aXNib2J3dnR3ZHhwcW9ocW1uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1MjEyNjcsImV4cCI6MjA3NzA5NzI2N30.TMeHW5RMM1MTFD764MhV7ErBfti-8xYAbTxv3J8y8tI';
+const supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentUser=null;
+async function signIn(){
+  const email=document.getElementById('email').value.trim();
+  const password=document.getElementById('password').value;
+  const { data, error } = await supa.auth.signInWithPassword({ email, password });
+  if(error){ alert(error.message); return; }
+  currentUser=data.user; postAuth();
+}
+async function signUp(){
+  const email=document.getElementById('email').value.trim();
+  const password=document.getElementById('password').value;
+  const { data, error } = await supa.auth.signUp({ email, password });
+  if(error){ alert(error.message); return; }
+  alert('Account created. Check email to confirm.');
+}
+async function sendOtp(){
+  const email=document.getElementById('email').value.trim();
+  const { error } = await supa.auth.signInWithOtp({ email });
+  if(error){ alert(error.message); return; }
+  alert('Magic link sent.');
+}
+async function logout(){ await supa.auth.signOut(); currentUser=null; showTab('auth'); }
+
+supa.auth.onAuthStateChange((evt, session)=>{
+  currentUser=session?.user||null;
+  if(currentUser) postAuth();
+});
+
+function postAuth(){
+  document.getElementById('auth').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('authUserBtn').textContent = currentUser?.email || 'Sign out';
+}
+
+function showTab(id){
+  ['auth','app'].forEach(x=>{
+    document.getElementById(x)?.classList.add('hidden');
+    document.getElementById('tab_'+x)?.classList.remove('active');
+  });
+  document.getElementById(id)?.classList.remove('hidden');
+  document.getElementById('tab_'+id)?.classList.add('active');
+}
+</script>
+</body>
+</html>
